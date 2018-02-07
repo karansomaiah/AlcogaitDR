@@ -1,0 +1,77 @@
+import csv
+import pandas as pd
+import numpy as np
+from keras.models import Sequential
+from keras.layers import Dense, Dropout
+from keras.layers import Embedding
+from keras.layers import Conv1D, GlobalAveragePooling1D, MaxPooling1D, Flatten
+from keras.utils import to_categorical
+
+X_train = []
+with open('UCI HAR Dataset/train/X_train.txt') as csvfile:
+    reader = csv.reader(csvfile)
+    for row in reader:
+        temp = row[0].split(" ")
+        temp_list = []
+        for x in temp:
+            if x != '':
+                temp_list.append(float(x))
+        X_train.append(temp_list)
+
+X_test = []
+with open('UCI HAR Dataset/test/X_test.txt') as csvfile:
+    reader = csv.reader(csvfile)
+    for row in reader:
+        temp = row[0].split(" ")
+        temp_list = []
+        for x in temp:
+            if x != '':
+                temp_list.append(float(x))
+        X_test.append(temp_list)
+
+X_train = pd.DataFrame(X_train)
+X_test = pd.DataFrame(X_test)
+
+y_train = []
+with open('UCI HAR Dataset/train/y_train.txt') as csvfile:
+    reader = csv.reader(csvfile)
+    for row in reader:
+        y_train.append(int(row[0]))
+
+y_test = []
+with open('UCI HAR Dataset/test/y_test.txt') as csvfile:
+    reader = csv.reader(csvfile)
+    for row in reader:
+        y_test.append(int(row[0]))
+
+y_train_ = [(x-1) for x in y_train]
+
+y_test_ = [(x-1) for x in y_test]
+
+y_train = to_categorical(y_train_)
+y_test = to_categorical(y_test_)
+
+X_train_reshaped = np.array(X_train).reshape(7352,561,1)
+X_test_reshaped = np.array(X_test).reshape(2947,561,1)
+
+model = Sequential()
+model.add(Conv1D(120, 11, activation='relu', input_shape=(561,1)))
+model.add(MaxPooling1D(2))
+model.add(Conv1D(130, 11, activation='relu'))
+model.add(MaxPooling1D(2))
+model.add(Conv1D(128, 11, activation='relu'))
+model.add(MaxPooling1D(2))
+model.add(GlobalAveragePooling1D())
+#model.add(Dropout(0.5))
+model.add(Dense(6, activation='softmax'))
+
+model.summary()
+
+model.compile(loss='binary_crossentropy',
+              optimizer='sgd',
+              metrics=['accuracy'])
+
+history = model.fit(X_train_reshaped, y_train, batch_size=128, validation_data=(X_train_reshaped,y_train), epochs=100)
+
+score = model.evaluate(X_test_reshaped, y_test, batch_size=128)
+
